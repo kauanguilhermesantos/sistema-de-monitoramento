@@ -1,7 +1,4 @@
 {
-  "devDependencies": {
-    "tailwindcss": "^3.4.15"
-  },
   "name": "monitoramento-de-sistema",
   "version": "1.0.0",
   "main": "tailwind.config.js",
