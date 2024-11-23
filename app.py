@@ -24,7 +24,7 @@ def pegaInfoMemoria():
     print(f"Livre: {memoriaLivre / (1024 ** 3):.2f} GB")
     print(f"Percetual usado: {memoriaUsadaPercentual:.2f} %")
     
-def pegaListaDeProcessos():
+def listaProcessos():
     for pid in psutil.pids():
         try:
             process = psutil.Process(pid)
@@ -36,6 +36,25 @@ def pegaListaDeProcessos():
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             pass
 
+def medeBateria():
+    bateria = psutil.sensors_battery()
+
+    if bateria:
+        print(f"Nível de bateria: {bateria.percent}%")
+        print(f"Carregando: {"Sim" if bateria.power_plugged else "Não"}")
+
+        def segundosParaHora(segundos):
+            hora, resto = divmod(segundos, 3600)
+            minutos, segundo = divmod(resto, 60)
+
+            if hora > 0:
+                return f"{hora}h {minutos}min"
+            else:
+                return f"{minutos}min"
+
+        print(f"Tempo restante: {segundosParaHora(bateria.secsleft)}")
+
 pegaInfoCpu()
 pegaInfoMemoria()
-pegaListaDeProcessos()
+listaProcessos()
+medeBateria()
