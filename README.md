@@ -69,3 +69,32 @@ def listaProcessos():
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             pass
 ```
+
+## Função ``medeBateria()``
+
+A função ``medeBateria()`` tem a função de coletar as informações sobre a bateira da máquina.
+
+- ``bateria = psutil.sensors_battery()``: coleta todas as informações da bateria;
+- ``bateria.percent``: Mostra o percentual da bateria.
+- ``bateria.power_plugged``: detecta se o carregador está ligado à máquina.
+- ``bateria.secsleft``: calcula o tempo restante da bateria.
+
+```python
+def medeBateria():
+    bateria = psutil.sensors_battery()
+
+    if bateria:
+        print(f"Nível de bateria: {bateria.percent}%")
+        print(f"Carregando: {"Sim" if bateria.power_plugged else "Não"}")
+
+        def segundosParaHora(segundos):
+            hora, resto = divmod(segundos, 3600)
+            minutos, segundo = divmod(resto, 60)
+
+            if hora > 0:
+                return f"{hora}h {minutos}min"
+            else:
+                return f"{minutos}min"
+
+        print(f"Tempo restante: {segundosParaHora(bateria.secsleft)}")
+```
