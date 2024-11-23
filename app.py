@@ -1,4 +1,5 @@
 import psutil
+import time
 
 # CPU
 
@@ -23,6 +24,18 @@ def pegaInfoMemoria():
     print(f"Livre: {memoriaLivre / (1024 ** 3):.2f} GB")
     print(f"Percetual usado: {memoriaUsadaPercentual:.2f} %")
     
+def pegaListaDeProcessos():
+    for pid in psutil.pids():
+        try:
+            process = psutil.Process(pid)
+
+            process.cpu_percent(interval=0)
+            time.sleep(0.1)
+
+            print(f"PID: {pid} | Nome: {process.name()} | Status: {process.status()} | CPU: {process.cpu_percent(interval=0):.2f}% | Memória usada: {process.memory_info().rss / (1024 ** 2):.2f} MB")    
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            pass
 
 pegaInfoCpu()
 pegaInfoMemoria()
+pegaListaDeProcessos()
