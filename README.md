@@ -16,9 +16,11 @@ A função ``pegaInfoCpu()`` tem a função de coletar e exibir informações so
 def pegaInfoCpu():
     nucleosLogicos = psutil.cpu_count(logical=True)
     nucleosFisicos = psutil.cpu_count(logical=False)
-    print("CPU:")
-    print(f"Núcleos lógicos: {nucleosLogicos}")
-    print(f"Núcleos físicos: {nucleosFisicos}\n")
+    
+    return {
+        "nucleosLogicos": nucleosLogicos,
+        "nucleosFisicos": nucleosFisicos
+    }
 ```
 
 ## Função ``pegaInfoMemoria()``
@@ -36,12 +38,13 @@ def pegaInfoMemoria():
     memoriaUsada = psutil.virtual_memory().used
     memoriaLivre = psutil.virtual_memory().free
     memoriaUsadaPercentual = psutil.virtual_memory().percent
-    
-    print("Memória RAM:")
-    print(f"Total: {memoriaTotal / (1024 ** 3):.2f} GB")
-    print(f"Usada: {memoriaUsada / (1024 ** 3):.2f} GB")
-    print(f"Livre: {memoriaLivre / (1024 ** 3):.2f} GB")
-    print(f"Percetual usado: {memoriaUsadaPercentual:.2f} %")
+
+    return {
+        "memoriaTotal": memoriaTotal,
+        "memoriaUsada": memoriaUsada,
+        "memoriaLivre": memoriaLivre,
+        "memoriaUsadaPercentual": memoriaUsadaPercentual
+    }
 ```
 
 ## Função ``listaProcessos()``
@@ -58,6 +61,9 @@ A função ``listaProcessos()`` tem a função de listar todos os processos que 
 
 ```python
 def listaProcessos():
+    st.subheader("Lista de Processos")
+    processos = []
+
     for pid in psutil.pids():
         try:
             process = psutil.Process(pid)
@@ -65,9 +71,18 @@ def listaProcessos():
             process.cpu_percent(interval=0)
             time.sleep(0.1)
 
-            print(f"PID: {pid} | Nome: {process.name()} | Status: {process.status()} | CPU: {process.cpu_percent(interval=0):.2f}% | Memória usada: {process.memory_info().rss / (1024 ** 2):.2f} MB")    
+            processos.append({
+                "pid": pid,
+                "processName": process.name(),
+                "status": process.status(),
+                "cpu (%)": f"{process.cpu_percent(interval=0):.2f}",
+                "memoriaUsada (MB)": f"{process.memory_info().rss / (1024**2):.2f}"
+            })
+
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             pass
+    
+    st.table(processos)
 ```
 
 ## Função ``medeBateria()``
@@ -75,7 +90,7 @@ def listaProcessos():
 A função ``medeBateria()`` tem a função de coletar as informações sobre a bateira da máquina.
 
 - ``bateria = psutil.sensors_battery()``: coleta todas as informações da bateria;
-- ``bateria.percent``: Mostra o percentual da bateria.
+- ``bateria.percent``: mostra o percentual da bateria.
 - ``bateria.power_plugged``: detecta se o carregador está ligado à máquina.
 - ``bateria.secsleft``: calcula o tempo restante da bateria.
 
@@ -84,9 +99,6 @@ def medeBateria():
     bateria = psutil.sensors_battery()
 
     if bateria:
-        print(f"Nível de bateria: {bateria.percent}%")
-        print(f"Carregando: {"Sim" if bateria.power_plugged else "Não"}")
-
         def segundosParaHora(segundos):
             hora, resto = divmod(segundos, 3600)
             minutos, segundo = divmod(resto, 60)
@@ -96,5 +108,11 @@ def medeBateria():
             else:
                 return f"{minutos}min"
 
-        print(f"Tempo restante: {segundosParaHora(bateria.secsleft)}")
+        return{
+            "nivelDeBateria": f"{bateria.percent}%",
+            "carregando": "Sim" if bateria.power_plugged else "Não",
+            "tempoRestante": segundosParaHora(bateria.secsleft)
+        }
+    else:
+        return "Bateria não encontrada."
 ```
