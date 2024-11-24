@@ -75,22 +75,31 @@ def medeBateria():
 
 def main():
     infoCpu = pegaInfoCpu()
-
-    st.write(f"Núcleos Lógicos: {infoCpu['nucleosLogicos']}")
-    st.write(f"Núcleos físicos: {infoCpu['nucleosFisicos']}")
-
     infoMemoria = pegaInfoMemoria()
-
-    st.write(f"Total: {infoMemoria['memoriaTotal'] / (1024 ** 3):.2f} GB")
-    st.write(f"Usada: {infoMemoria['memoriaUsada'] / (1024 ** 3):.2f} GB")
-    st.write(f"Livre: {infoMemoria['memoriaLivre'] / (1024 ** 3):.2f} GB")
-    st.write(f"Percetual usado: {infoMemoria['memoriaUsadaPercentual']:.2f} %")
-
     infoBateria = medeBateria()
 
-    st.write(f"Nível de bateria: {infoBateria['nivelDeBateria']}")
-    st.write(f"Carregando: {infoBateria['carregando']}")
-    st.write(f"Tempo restante: {infoBateria['tempoRestante']}")
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        with st.container():
+            st.subheader("CPU")
+            st.write(f"Núcleos Lógicos: {infoCpu['nucleosLogicos']}")
+            st.write(f"Núcleos físicos: {infoCpu['nucleosFisicos']}")
+
+    with col2:
+        with st.container():
+            st.subheader("Memória RAM")
+            st.write(f"Total: {infoMemoria['memoriaTotal'] / (1024 ** 3):.2f} GB")
+            st.write(f"Usada: {infoMemoria['memoriaUsada'] / (1024 ** 3):.2f} GB")
+            st.write(f"Livre: {infoMemoria['memoriaLivre'] / (1024 ** 3):.2f} GB")
+            st.write(f"Percetual usado: {infoMemoria['memoriaUsadaPercentual']:.2f} %")
+
+    with col3:
+        with st.container():
+            st.subheader("Bateria")
+            st.write(f"Nível de bateria: {infoBateria['nivelDeBateria']}")
+            st.write(f"Carregando: {infoBateria['carregando']}")
+            st.write(f"Tempo restante: {infoBateria['tempoRestante']}")
 
     st.title("Processo do Sistema")
     listaProcessos()
