@@ -63,8 +63,13 @@ A função ``listaProcessos()`` tem a função de listar todos os processos que 
 def listaProcessos():
     st.subheader("Lista de Processos")
     processos = []
+    TodosOsProcessos = psutil.pids()
+    total = len(TodosOsProcessos)
 
-    for pid in psutil.pids():
+    progresso = st.progress(0)
+    textoStatus = st.empty()
+
+    for i, pid in enumerate(TodosOsProcessos):
         try:
             process = psutil.Process(pid)
 
@@ -81,6 +86,12 @@ def listaProcessos():
 
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             pass
+
+        progresso.progress((i+1)/total)
+        textoStatus.text(f"Carregando processos... {i+1}/{total}")
+
+    progresso.empty()
+    textoStatus.empty()
     
     st.table(processos)
 ```
