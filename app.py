@@ -1,30 +1,36 @@
 import psutil
 import time
+import streamlit as st
+
 
 # CPU
 
 def pegaInfoCpu():
     nucleosLogicos = psutil.cpu_count(logical=True)
     nucleosFisicos = psutil.cpu_count(logical=False)
-    print("CPU:")
-    print(f"Núcleos lógicos: {nucleosLogicos}")
-    print(f"Núcleos físicos: {nucleosFisicos}\n")
+    
+    return {
+        "nucleosLogicos": nucleosLogicos,
+        "nucleosFisicos": nucleosFisicos
+    }
 
 def pegaInfoMemoria():
     memoriaTotal = psutil.virtual_memory().total
-    memoriaDisponivel = psutil.virtual_memory().available
     memoriaUsada = psutil.virtual_memory().used
     memoriaLivre = psutil.virtual_memory().free
     memoriaUsadaPercentual = psutil.virtual_memory().percent
-    
-    print("Memória RAM:")
-    print(f"Total: {memoriaTotal / (1024 ** 3):.2f} GB")
-    # print(f"Disponível: {memoriaDisponivel / (1024 ** 3):.2f} GB")
-    print(f"Usada: {memoriaUsada / (1024 ** 3):.2f} GB")
-    print(f"Livre: {memoriaLivre / (1024 ** 3):.2f} GB")
-    print(f"Percetual usado: {memoriaUsadaPercentual:.2f} %")
+
+    return {
+        "memoriaTotal": memoriaTotal,
+        "memoriaUsada": memoriaUsada,
+        "memoriaLivre": memoriaLivre,
+        "memoriaUsadaPercentual": memoriaUsadaPercentual
+    }
     
 def listaProcessos():
+    st.subheader("Lista de Processos")
+    processos = []
+
     for pid in psutil.pids():
         try:
             process = psutil.Process(pid)
@@ -32,17 +38,24 @@ def listaProcessos():
             process.cpu_percent(interval=0)
             time.sleep(0.1)
 
-            print(f"PID: {pid} | Nome: {process.name()} | Status: {process.status()} | CPU: {process.cpu_percent(interval=0):.2f}% | Memória usada: {process.memory_info().rss / (1024 ** 2):.2f} MB")    
+            processos.append({
+                "pid": pid,
+                "processName": process.name(),
+                "status": process.status(),
+                "cpu (%)": f"{process.cpu_percent(interval=0):.2f}",
+                "memoriaUsada (MB)": f"{process.memory_info().rss / (1024**2):.2f}"
+            })
+
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             pass
+    
+    st.table(processos)
+
 
 def medeBateria():
     bateria = psutil.sensors_battery()
 
     if bateria:
-        print(f"Nível de bateria: {bateria.percent}%")
-        print(f"Carregando: {"Sim" if bateria.power_plugged else "Não"}")
-
         def segundosParaHora(segundos):
             hora, resto = divmod(segundos, 3600)
             minutos, segundo = divmod(resto, 60)
@@ -52,9 +65,34 @@ def medeBateria():
             else:
                 return f"{minutos}min"
 
-        print(f"Tempo restante: {segundosParaHora(bateria.secsleft)}")
+        return{
+            "nivelDeBateria": f"{bateria.percent}%",
+            "carregando": "Sim" if bateria.power_plugged else "Não",
+            "tempoRestante": segundosParaHora(bateria.secsleft)
+        }
+    else:
+        return "Bateria não encontrada."
 
-pegaInfoCpu()
-pegaInfoMemoria()
-listaProcessos()
-medeBateria()
+def main():
+    infoCpu = pegaInfoCpu()
+
+    st.write(f"Núcleos Lógicos: {infoCpu['nucleosLogicos']}")
+    st.write(f"Núcleos físicos: {infoCpu['nucleosFisicos']}")
+
+    infoMemoria = pegaInfoMemoria()
+
+    st.write(f"Total: {infoMemoria['memoriaTotal'] / (1024 ** 3):.2f} GB")
+    st.write(f"Usada: {infoMemoria['memoriaUsada'] / (1024 ** 3):.2f} GB")
+    st.write(f"Livre: {infoMemoria['memoriaLivre'] / (1024 ** 3):.2f} GB")
+    st.write(f"Percetual usado: {infoMemoria['memoriaUsadaPercentual']:.2f} %")
+
+    infoBateria = medeBateria()
+
+    st.write(f"Nível de bateria: {infoBateria['nivelDeBateria']}")
+    st.write(f"Carregando: {infoBateria['carregando']}")
+    st.write(f"Tempo restante: {infoBateria['tempoRestante']}")
+
+    st.title("Processo do Sistema")
+    listaProcessos()
+
+main()
