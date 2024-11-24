@@ -1,65 +1,118 @@
 import psutil
-from tabulate import tabulate
+import time
+import streamlit as st
 
-def get_cpu_info():
-    print(f"Quantidade de núcleos (físicos): {psutil.cpu_count(logical=False)}")
-    print(f"Quantidade de núcleos (lógicos): {psutil.cpu_count(logical=True)}\n")
 
-def get_memory_info():
-    memory = psutil.virtual_memory()
-    print("Memória RAM:")
-    print(f"  Total: {memory.total / 1e9:.2f} GB")
-    print(f"  Usada: {memory.used / 1e9:.2f} GB")
-    print(f"  Livre: {memory.available / 1e9:.2f} GB\n")
+# CPU
 
-def get_process_list():
-    processes = []
-    for proc in psutil.process_iter(['pid', 'name', 'memory_info']):
+def pegaInfoCpu():
+    nucleosLogicos = psutil.cpu_count(logical=True)
+    nucleosFisicos = psutil.cpu_count(logical=False)
+    
+    return {
+        "nucleosLogicos": nucleosLogicos,
+        "nucleosFisicos": nucleosFisicos
+    }
+
+def pegaInfoMemoria():
+    memoriaTotal = psutil.virtual_memory().total
+    memoriaUsada = psutil.virtual_memory().used
+    memoriaLivre = psutil.virtual_memory().free
+    memoriaUsadaPercentual = psutil.virtual_memory().percent
+
+    return {
+        "memoriaTotal": memoriaTotal,
+        "memoriaUsada": memoriaUsada,
+        "memoriaLivre": memoriaLivre,
+        "memoriaUsadaPercentual": memoriaUsadaPercentual
+    }
+    
+def listaProcessos():
+    st.subheader("Lista de Processos")
+    processos = []
+    TodosOsProcessos = psutil.pids()
+    total = len(TodosOsProcessos)
+
+    progresso = st.progress(0)
+    textoStatus = st.empty()
+
+    for i, pid in enumerate(TodosOsProcessos):
         try:
-            mem_info = proc.info['memory_info']
-            processes.append([proc.info['pid'], proc.info['name'], mem_info.rss / 1e6])
+            process = psutil.Process(pid)
+
+            process.cpu_percent(interval=0)
+            time.sleep(0.1)
+
+            processos.append({
+                "pid": pid,
+                "processName": process.name(),
+                "status": process.status(),
+                "cpu (%)": f"{process.cpu_percent(interval=0):.2f}",
+                "memoriaUsada (MB)": f"{process.memory_info().rss / (1024**2):.2f}"
+            })
+
         except (psutil.NoSuchProcess, psutil.AccessDenied):
-            continue
-    print(tabulate(processes, headers=["PID", "Nome", "Memória Usada (MB)"], tablefmt="pretty"))
+            pass
 
-def get_process_details(pid):
-    try:
-        proc = psutil.Process(pid)
-        print(f"Detalhes do processo {pid}:")
-        print(f"  Nome: {proc.name()}")
-        print(f"  Status: {proc.status()}")
-        print(f"  Tempo de execução: {proc.create_time()}")
-        print(f"  Memória usada: {proc.memory_info().rss / 1e6:.2f} MB")
-    except psutil.NoSuchProcess:
-        print(f"Processo com PID {pid} não encontrado.")
-    except psutil.AccessDenied:
-        print(f"Acesso negado ao processo com PID {pid}.")
+        progresso.progress((i+1)/total)
+        textoStatus.text(f"Carregando processos... {i+1}/{total}")
 
-def get_battery_info():
-    battery = psutil.sensors_battery()
-    if battery:
-        print("Informações da bateria:")
-        print(f"  Nível de bateria: {battery.percent}%")
-        print(f"  Carregando: {'Sim' if battery.power_plugged else 'Não'}")
+    progresso.empty()
+    textoStatus.empty()
+    
+    st.table(processos)
+
+def medeBateria():
+    bateria = psutil.sensors_battery()
+
+    if bateria:
+        def segundosParaHora(segundos):
+            hora, resto = divmod(segundos, 3600)
+            minutos, segundo = divmod(resto, 60)
+
+            if hora > 0:
+                return f"{hora}h {minutos}min"
+            else:
+                return f"{minutos}min"
+
+        return{
+            "nivelDeBateria": f"{bateria.percent}%",
+            "carregando": "Sim" if bateria.power_plugged else "Não",
+            "tempoRestante": segundosParaHora(bateria.secsleft)
+        }
     else:
-        print("Informações de bateria não disponíveis.\n")
+        return "Bateria não encontrada."
 
 def main():
-    print("Informações do Computador\n")
-    get_cpu_info()
-    get_memory_info()
-    print("Lista de Processos:")
-    get_process_list()
-    print("\nDigite o PID de um processo para detalhes (ou 'sair' para finalizar):")
-    while True:
-        pid_input = input("PID: ")
-        if pid_input.lower() == "sair":
-            break
-        elif pid_input.isdigit():
-            get_process_details(int(pid_input))
-        else:
-            print("Entrada inválida. Digite um número válido ou 'sair'.")
-    get_battery_info()
+    infoCpu = pegaInfoCpu()
+    infoMemoria = pegaInfoMemoria()
+    infoBateria = medeBateria()
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        with st.container():
+            st.subheader("CPU")
+            st.write(f"Núcleos Lógicos: {infoCpu['nucleosLogicos']}")
+            st.write(f"Núcleos físicos: {infoCpu['nucleosFisicos']}")
+
+    with col2:
+        with st.container():
+            st.subheader("Memória RAM")
+            st.write(f"Total: {infoMemoria['memoriaTotal'] / (1024 ** 3):.2f} GB")
+            st.write(f"Usada: {infoMemoria['memoriaUsada'] / (1024 ** 3):.2f} GB")
+            st.write(f"Livre: {infoMemoria['memoriaLivre'] / (1024 ** 3):.2f} GB")
+            st.write(f"Percetual usado: {infoMemoria['memoriaUsadaPercentual']:.2f} %")
+
+    with col3:
+        with st.container():
+            st.subheader("Bateria")
+            st.write(f"Nível de bateria: {infoBateria['nivelDeBateria']}")
+            st.write(f"Carregando: {infoBateria['carregando']}")
+            st.write(f"Tempo restante: {infoBateria['tempoRestante']}")
+
+    st.title("Processos do Sistema")
+    listaProcessos()
 
 if __name__ == "__main__":
     main()
